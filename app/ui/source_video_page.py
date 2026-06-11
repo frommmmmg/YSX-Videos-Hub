@@ -4,23 +4,24 @@ import streamlit as st
 
 from app.db.database import get_connection
 from app.db import queries
+from app.i18n import t
 
 
 def render():
-    st.header("原视频")
+    st.header(t("source_title"))
     with get_connection() as conn:
         rows = queries.get_source_videos(conn)
 
     if not rows:
-        st.info("还没有导入原视频")
+        st.info(t("source_no_data"))
         return
 
     for row in rows:
         with st.expander(f"{row['id']} - {row['file_name']}"):
-            st.write(f"路径：{row['file_path']}")
-            st.write(f"时长：{float(row['duration'] or 0):.2f}s")
-            st.write(f"分辨率：{row['resolution']}")
-            st.write(f"fps：{row['fps']}")
-            st.write(f"导入时间：{row['imported_at']}")
+            st.write(t("source_path", path=row["file_path"]))
+            st.write(t("source_duration", duration=float(row["duration"] or 0)))
+            st.write(t("source_resolution", value=row["resolution"]))
+            st.write(t("source_fps", value=row["fps"]))
+            st.write(t("source_imported_at", value=row["imported_at"]))
             if row.get("note"):
-                st.write(f"处理备注：{row['note']}")
+                st.write(t("source_note", note=row["note"]))

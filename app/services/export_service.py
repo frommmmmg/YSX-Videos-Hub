@@ -8,21 +8,22 @@ from app.config.settings import EXPORTS_DIR, FFMPEG_PATH
 from app.db import queries
 from app.db.database import get_connection
 from app.utils.ffmpeg_utils import run_command
+from app.i18n import t
 
 
 def export_extended_clip(clip_id: int, extend_before_seconds: float, extend_after_seconds: float, export_mode: str = "copy") -> str:
     with get_connection() as conn:
         clip = queries.get_clip_by_id(conn, clip_id)
         if not clip:
-            raise ValueError(f"Clip not found: {clip_id}")
+            raise ValueError(t("service_clip_not_found", clip_id=clip_id))
 
         source_video = queries.get_source_video_by_id(conn, clip["source_video_id"])
         if not source_video:
-            raise ValueError(f"Source video not found: {clip['source_video_id']}")
+            raise ValueError(t("service_source_not_found", source_video_id=clip["source_video_id"]))
 
         source_path = Path(source_video["file_path"])
         if not source_path.exists():
-            raise FileNotFoundError(f"原视频丢失: {source_path}")
+            raise FileNotFoundError(t("service_source_video_missing", source_path=source_path))
 
         source_id = clip["source_video_id"]
         duration = float(source_video["duration"] or 0.0)
@@ -32,12 +33,12 @@ def export_extended_clip(clip_id: int, extend_before_seconds: float, extend_afte
         before = float(extend_before_seconds)
         after = float(extend_after_seconds)
         if before < 0 or after < 0:
-            raise ValueError("延展秒数不能小于 0")
+            raise ValueError(t("service_extend_negative"))
 
         new_start = max(0.0, original_start - before)
         new_end = min(duration, original_end + after)
         if new_end <= new_start:
-            raise ValueError("导出时间范围无效")
+            raise ValueError(t("service_export_time_invalid"))
 
         export_dir = EXPORTS_DIR / f"source_{source_id:06d}"
         export_dir.mkdir(parents=True, exist_ok=True)
@@ -65,7 +66,7 @@ def export_extended_clip(clip_id: int, extend_before_seconds: float, extend_afte
         ]
         run_command(cmd)
         if not export_path.exists():
-            raise RuntimeError("导出失败，未生成文件")
+            raise RuntimeError(t("service_export_not_generated"))
 
         queries.insert_export_record(
             conn=conn,

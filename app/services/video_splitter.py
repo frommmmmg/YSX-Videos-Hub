@@ -9,6 +9,7 @@ from app.db import queries
 from app.db.database import get_connection
 from app.utils.ffmpeg_utils import run_command
 from app.utils.logger import configure_logging
+from app.i18n import t
 
 LOGGER = configure_logging()
 
@@ -34,7 +35,7 @@ def split_video_fixed(source_video_id: int, target_duration: float = TARGET_CLIP
         source_path = Path(source_video["file_path"])
         duration = float(source_video["duration"] or 0.0)
         if not source_path.exists():
-            raise FileNotFoundError(f"原视频已丢失: {source_path}")
+            raise FileNotFoundError(t("service_source_video_missing", source_path=source_path))
 
         segments = build_fixed_segments(duration, target_duration)
         created_ids: list[int] = []
@@ -66,7 +67,7 @@ def split_video_fixed(source_video_id: int, target_duration: float = TARGET_CLIP
                 failed_segments.append(f"{start_time:.3f}-{end_time:.3f}: {err}")
                 continue
             if not clip_path.exists():
-                failed_segments.append(f"{start_time:.3f}-{end_time:.3f}: 输出文件未生成")
+                failed_segments.append(t("service_clip_output_missing", start_time=start_time, end_time=end_time))
                 continue
             clip_duration = max(0.0, end_time - start_time)
             clip_id = queries.insert_clip(
@@ -84,10 +85,10 @@ def split_video_fixed(source_video_id: int, target_duration: float = TARGET_CLIP
             queries.append_source_note(
                 conn,
                 source_video_id,
-                "固定切片失败: " + "; ".join(failed_segments),
+                t("service_fixed_split_failed", details="; ".join(failed_segments)),
             )
         else:
-            queries.append_source_note(conn, source_video_id, "固定切片完成")
+            queries.append_source_note(conn, source_video_id, t("service_fixed_split_done"))
 
         queries.update_clip_neighbors(conn, source_video_id)
         return created_ids

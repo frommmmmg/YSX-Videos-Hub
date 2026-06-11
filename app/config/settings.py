@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -26,6 +27,16 @@ MAX_CLIP_DURATION = 8.0
 DEFAULT_PAGE_SIZE = 24
 MAX_PAGE_SIZE = 48
 
-TAGGER_BACKEND = "mock"
+TAGGER_BACKEND = os.getenv("TAGGER_BACKEND", "mock").strip().lower()
+
+OLLAMA_API_BASE = os.getenv("OLLAMA_API_BASE", "http://127.0.0.1:11434").strip()
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llava:7b").strip()
+
+STEPFUN_API_BASE = os.getenv("STEPFUN_API_BASE", "https://api.stepfun.com").strip()
+STEPFUN_API_KEY = os.getenv("STEPFUN_API_KEY", "").strip()
+STEPFUN_MODEL = os.getenv("STEPFUN_MODEL", "step-1v-8k").strip()
+
+TAGGER_TIMEOUT_SECONDS = int(os.getenv("TAGGER_TIMEOUT_SECONDS", "30"))
+TAGGER_MAX_KEYFRAMES = int(os.getenv("TAGGER_MAX_KEYFRAMES", "8"))
 
 LOG_FILE = LOGS_DIR / "app.log"

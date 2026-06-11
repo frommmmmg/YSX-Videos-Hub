@@ -8,6 +8,7 @@ from app.db import queries
 from app.db.database import get_connection
 from app.utils.ffmpeg_utils import run_command
 from app.utils.logger import configure_logging
+from app.i18n import t
 
 LOGGER = configure_logging()
 
@@ -34,11 +35,11 @@ def extract_keyframes(clip_id: int) -> list[dict]:
     with get_connection() as conn:
         clip = queries.get_clip_by_id(conn, clip_id)
         if not clip:
-            raise ValueError(f"Clip not found: {clip_id}")
+            raise ValueError(t("service_clip_not_found", clip_id=clip_id))
 
         clip_path = Path(clip["clip_path"])
         if not clip_path.exists():
-            raise FileNotFoundError(f"Clip file not found: {clip_path}")
+            raise FileNotFoundError(t("service_clip_file_missing", path=clip_path))
 
         source_video_id = clip["source_video_id"]
         source_dir = KEYFRAMES_DIR / f"source_{source_video_id:06d}" / f"clip_{clip_id:06d}"
@@ -95,7 +96,6 @@ def extract_keyframes(clip_id: int) -> list[dict]:
                 "frame_role": role,
             })
 
-        # 生成缩略图（默认取 02_mid1）
         thumb_src = next((o for o in outputs if o["frame_role"] == "mid1"), None)
         if thumb_src is None and outputs:
             thumb_src = outputs[1] if len(outputs) > 1 else outputs[0]
@@ -108,6 +108,6 @@ def extract_keyframes(clip_id: int) -> list[dict]:
             queries.set_clip_thumbnail(conn, clip_id, str(thumb_path))
             queries.set_clip_note(conn, clip_id, None)
         else:
-            queries.set_clip_note(conn, clip_id, "关键帧提取失败：当前段落未生成有效关键帧")
+            queries.set_clip_note(conn, clip_id, t("service_keyframe_extract_no_frame"))
 
         return outputs

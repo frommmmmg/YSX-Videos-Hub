@@ -3,14 +3,24 @@ from __future__ import annotations
 import streamlit as st
 
 from app.config import settings
+from app.i18n import t
 
 
 def render():
-    st.header("设置")
-    st.subheader("运行参数")
-    st.write(f"素材库路径：{settings.LIBRARY_DIR}")
-    st.write(f"默认切片时长：{settings.TARGET_CLIP_DURATION}s")
-    st.write(f"最短片段：{settings.MIN_CLIP_DURATION}s")
-    st.write(f"最长片段：{settings.MAX_CLIP_DURATION}s")
-    st.write(f"Tagger 接口：{settings.TAGGER_BACKEND}")
-    st.caption("当前版本保留 VLM 接口，未绑定具体模型实现。")
+    st.header(t("settings_title"))
+    st.subheader(t("settings_runtime_title"))
+    st.write(t("settings_library_path", path=settings.LIBRARY_DIR))
+    st.write(t("settings_target_duration", value=settings.TARGET_CLIP_DURATION))
+    st.write(t("settings_min_duration", value=settings.MIN_CLIP_DURATION))
+    st.write(t("settings_max_duration", value=settings.MAX_CLIP_DURATION))
+    st.write(t("settings_tagger_backend", value=settings.TAGGER_BACKEND))
+    if settings.TAGGER_BACKEND == "ollama":
+        st.write(t("settings_tagger_endpoint", value=settings.OLLAMA_API_BASE))
+        st.write(t("settings_tagger_model", value=settings.OLLAMA_MODEL))
+        st.caption(t("settings_tagger_note_ollama"))
+    elif settings.TAGGER_BACKEND == "stepfun":
+        st.write(t("settings_tagger_endpoint", value=settings.STEPFUN_API_BASE))
+        st.write(t("settings_tagger_model", value=settings.STEPFUN_MODEL))
+        st.write(t("settings_tagger_api_key", value=bool(settings.STEPFUN_API_KEY)))
+        st.caption(t("settings_tagger_note_stepfun"))
+    st.caption(t("settings_capability_note"))

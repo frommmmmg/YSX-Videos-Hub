@@ -9,12 +9,13 @@ from app.db import queries
 from app.db.database import get_connection
 from app.services.video_probe import probe_video
 from app.utils.hash_utils import calculate_file_hash
+from app.i18n import t
 
 
 def import_video(video_path: str):
     source_path = Path(video_path).expanduser().resolve()
     if not source_path.exists():
-        raise FileNotFoundError(f"视频不存在: {source_path}")
+        raise FileNotFoundError(t("service_file_not_found", path=source_path))
 
     file_hash = calculate_file_hash(str(source_path))
 

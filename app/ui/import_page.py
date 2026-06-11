@@ -5,12 +5,10 @@ import streamlit as st
 from app.services.video_importer import import_video
 from app.services.video_splitter import split_video_fixed
 from app.services.keyframe_extractor import extract_keyframes
+from app.i18n import t
 
 
-VIDEO_FILE_TYPES = [
-    ("视频文件", "*.mp4 *.mov *.mkv *.avi *.m4v *.webm"),
-    ("所有文件", "*.*"),
-]
+VIDEO_FILE_TYPES = ["*.mp4 *.mov *.mkv *.avi *.m4v *.webm", "*.*"]
 
 
 def _choose_video_file() -> str | None:
@@ -25,8 +23,8 @@ def _choose_video_file() -> str | None:
     root.attributes("-topmost", True)
     try:
         selected = filedialog.askopenfilename(
-            title="选择视频文件",
-            filetypes=VIDEO_FILE_TYPES,
+            title=t("import_file_dialog_title"),
+            filetypes=[(t("import_file_type_video"), VIDEO_FILE_TYPES[0]), (t("import_file_type_all"), VIDEO_FILE_TYPES[1])],
         )
     finally:
         root.destroy()
@@ -35,56 +33,56 @@ def _choose_video_file() -> str | None:
 
 
 def render():
-    st.header("导入视频")
+    st.header(t("import_title"))
 
     if "video_path" not in st.session_state:
         st.session_state["video_path"] = ""
 
-    if st.button("选择视频文件"):
+    if st.button(t("import_choose_file_btn")):
         selected_path = _choose_video_file()
         if selected_path:
             st.session_state["video_path"] = selected_path
         else:
-            st.warning("没有选择文件，或当前环境无法打开系统文件选择框。")
+            st.warning(t("import_choose_warning"))
 
     video_path = st.text_input(
-        "视频路径",
+        t("import_path_input"),
         key="video_path",
-        help="可以点击上方按钮选择，也可以手动粘贴本地视频绝对路径",
+        help=t("import_path_help"),
     )
 
-    if st.button("导入视频"):
+    if st.button(t("import_submit_btn")):
         try:
             if video_path.strip():
                 source_video_id, is_new = import_video(video_path.strip())
             else:
-                st.error("请先选择视频文件，或输入视频路径")
+                st.error(t("import_require_path"))
                 return
 
             if is_new:
-                st.success(f"导入成功，source_video_id={source_video_id}")
+                st.success(t("import_success", source_video_id=source_video_id))
             else:
-                st.warning(f"该文件已导入过，source_video_id={source_video_id}")
-                if st.button("重新生成切片与关键帧", key=f"reprocess_{source_video_id}"):
+                st.warning(t("import_exist", source_video_id=source_video_id))
+                if st.button(t("import_reprocess_btn"), key=f"reprocess_{source_video_id}"):
                     clip_ids = split_video_fixed(source_video_id)
                     if not clip_ids:
-                        st.warning("未生成新的切片（可能源视频已全部处理过，或处理失败）。")
+                        st.warning(t("import_no_new_segments"))
                     else:
                         for cid in clip_ids:
                             try:
                                 extract_keyframes(cid)
                             except Exception as err:
-                                st.warning(f"clip {cid} 关键帧提取失败：{err}")
-                    st.success("重新处理完成")
+                                st.warning(t("import_keyframe_failed", clip_id=cid, error=err))
+                    st.success(t("import_reprocess_done"))
                     return
 
             clip_ids = split_video_fixed(source_video_id)
-            st.success(f"已生成 {len(clip_ids)} 段切片")
+            st.success(t("import_segments_created", count=len(clip_ids)))
             for cid in clip_ids:
                 try:
                     extract_keyframes(cid)
                 except Exception as err:
-                    st.warning(f"clip {cid} 关键帧提取失败：{err}")
-            st.success("完成关键帧处理")
+                    st.warning(t("import_keyframe_failed", clip_id=cid, error=err))
+            st.success(t("import_keyframe_done"))
         except Exception as err:
-            st.error(f"导入失败：{err}")
+            st.error(t("import_error", error=err))
